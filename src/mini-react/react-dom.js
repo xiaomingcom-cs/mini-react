@@ -71,6 +71,7 @@ function renderDom(element) {
   return dom;
 }
 
+
 const ReactDOM = {
   render,
 };
