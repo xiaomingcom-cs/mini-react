@@ -32,6 +32,8 @@ export function renderDom(element) {
   if (typeof type === 'string') {
     // 常规 dom 节点的渲染
     dom = document.createElement(type);
+  } else if(typeof type === "function"){
+    dom = document.createDocumentFragment();
   } else {
     // 其他情况暂不考虑
     return null
