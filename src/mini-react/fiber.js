@@ -1,18 +1,28 @@
 import {renderDom} from './react-dom'
 import { commitRoot } from './commit';
+import { reconcileChildren } from './reconciler';
 let nextUnitOfWork = null;
-let rootFiber = null;
+let workInProgressRoot = null;
+let currentRoot = null;
+let deletions = [];
 
-// 创建 rootFiber 作为首个 nextUnitOfWork
+export function deleteFiber(fiber){
+  deletions.push(fiber)
+}
+export function getDeletions(){
+  return deletions;
+}
+// 创建 workInProgressRoot 作为首个 nextUnitOfWork
 export function createRoot(element, container) {
-  rootFiber = {
+  workInProgressRoot = {
     stateNode: container, // 记录对应的真实 dom 节点
     element: {
       // 挂载 element
       props: { children: [element] },
     },
+    alternate: currentRoot
   };
-  nextUnitOfWork = rootFiber;
+  nextUnitOfWork = workInProgressRoot;
 }
 
 // 执行当前工作单元并设置下一个要执行的工作单元
@@ -53,24 +63,7 @@ function performUnitOfWork(workInProgress) {
     let elements = Array.isArray(children) ? children : [children];
     elements = elements.flat();
 
-    let index = 0;
-    let prevSibling = null;
-
-    while(index < elements.length){
-      const element = elements[index];
-      const newFiber = {
-        element,
-        return: workInProgress,
-        stateNode: null
-      };
-      if(index === 0){
-        workInProgress.child = newFiber
-      }else {
-        prevSibling.sibling = newFiber
-      }
-      prevSibling = newFiber;
-      index++;
-    }
+    reconcileChildren(workInProgress,elements)
   }
   //设置下一个工作单元
   if(workInProgress.child){
@@ -96,9 +89,11 @@ function workLoop(deadline){
     performUnitOfWork(nextUnitOfWork);
     shouldYield = deadline.timeRemaining() < 1;
   }
-  if(!nextUnitOfWork && rootFiber){
-    commitRoot(rootFiber);
-    rootFiber = null;
+  if(!nextUnitOfWork && workInProgressRoot){
+    commitRoot(workInProgressRoot);
+    currentRoot = workInProgressRoot;
+    workInProgressRoot = null;
+    deletions = [];
   }
   requestAnimationFrame(workLoop);
 }
