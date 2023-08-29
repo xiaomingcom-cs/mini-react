@@ -16,6 +16,7 @@ export function createRoot(element, container) {
 
 // 执行当前工作单元并设置下一个要执行的工作单元
 function performUnitOfWork(workInProgress) {
+  //根据fiber创建dom
   if (!workInProgress.stateNode) {
     // 若当前 fiber 没有 stateNode，则根据 fiber 挂载的 element 的属性创建
     workInProgress.stateNode = renderDom(workInProgress.element);
@@ -30,6 +31,7 @@ function performUnitOfWork(workInProgress) {
     parentFiber.stateNode.appendChild(workInProgress.stateNode);
   }
 
+  //构建fiber树
   let children = workInProgress.element?.props?.children;
   let type = workInProgress.element?.type;
 
@@ -69,7 +71,7 @@ function performUnitOfWork(workInProgress) {
       index++;
     }
   }
-
+  //设置下一个工作单元
   if(workInProgress.child){
     nextUnitOfWork = workInProgress.child;
   }else{
@@ -86,3 +88,14 @@ function performUnitOfWork(workInProgress) {
     }
   }
 }
+
+function workLoop(deadline){
+  let shouldYield = false;
+  while(nextUnitOfWork && !shouldYield){
+    performUnitOfWork(nextUnitOfWork);
+    shouldYield = deadline.timeRemaining() < 1;
+  }
+  requestAnimationFrame(workLoop);
+}
+
+requestAnimationFrame(workLoop);
