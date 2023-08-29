@@ -48,10 +48,7 @@ function performUnitOfWork(workInProgress) {
 
   if(typeof type === 'function'){
     if(type.prototype.isReactComponent){
-      const {props, type: Comp} = workInProgress.element;
-      const component = new Comp(props);
-      const jsx = component.render();
-      children = [jsx];
+     updateClassComponent(workInProgress)
     }else{
       const {props, type: Fn} = workInProgress.element;
       const jsx = Fn(props);
@@ -83,6 +80,33 @@ function performUnitOfWork(workInProgress) {
   }
 }
 
+function updateClassComponent(fiber){
+  let jsx;
+  if (fiber.alternate) {
+    // 有旧组件，复用
+    const component = fiber.alternate.component;
+    fiber.component = component;
+    component._UpdateProps(fiber.element.props);
+    jsx = component.render();
+  } else {
+    // 没有则创建新组件
+    const { props, type: Comp } = fiber.element;
+    const component = new Comp(props);
+    fiber.component = component;
+    jsx = component.render();
+  }
+
+  reconcileChildren(fiber, [jsx]);
+}
+
+export function commitRender(){
+  workInProgressRoot = {
+    stateNode: currentRoot.stateNode,
+    element: currentRoot.element,
+    alternate: currentRoot,
+  };
+  nextUnitOfWork = workInProgressRoot;
+}
 function workLoop(deadline){
   let shouldYield = false;
   while(nextUnitOfWork && !shouldYield){
