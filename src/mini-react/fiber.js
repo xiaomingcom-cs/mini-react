@@ -29,4 +29,44 @@ function performUnitOfWork(workInProgress) {
     }
     parentFiber.stateNode.appendChild(workInProgress.stateNode);
   }
+
+  let children = workInProgress.element?.props?.children;
+  let type = workInProgress.element?.type;
+
+  if(typeof type === 'function'){
+    if(type.prototype.isReactComponent){
+      const {props, type: Comp} = workInProgress.element;
+      const component = new Comp(props);
+      const jsx = component.render();
+      children = [jsx];
+    }else{
+      const {props, type: Fn} = workInProgress.element;
+      const jsx = Fn(props);
+      children = [jsx];
+    }
+  }
+
+  if(children || children === 0){
+    let elements = Array.isArray(children) ? children : [children];
+    elements = elements.flat();
+
+    let index = 0;
+    let prevSibling = null;
+
+    while(index < elements.length){
+      const element = elements[index];
+      const newFiber = {
+        element,
+        return: workInProgress,
+        stateNode: null
+      };
+      if(index === 0){
+        workInProgress.child = newFiber
+      }else {
+        prevSibling.sibling = newFiber
+      }
+      prevSibling = newFiber;
+      index++;
+    }
+  }
 }
