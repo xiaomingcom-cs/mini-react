@@ -69,4 +69,20 @@ function performUnitOfWork(workInProgress) {
       index++;
     }
   }
+
+  if(workInProgress.child){
+    nextUnitOfWork = workInProgress.child;
+  }else{
+    let nextFiber = workInProgress;
+    while(nextFiber){
+      if(nextFiber.sibling){
+        nextUnitOfWork = nextFiber.sibling
+      }else{
+        nextFiber = nextFiber.return;
+      }
+    }
+    if(!nextFiber){
+      nextUnitOfWork = null;
+    }
+  }
 }
